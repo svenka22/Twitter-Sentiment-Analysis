@@ -13,7 +13,7 @@ featureList=[]
 featureVector=[]
 tweets=[]
 
-
+# Srinivasan is always a thala
 
 
 #start process_tweet
