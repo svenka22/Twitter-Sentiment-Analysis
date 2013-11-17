@@ -13,15 +13,7 @@ featureList=[]
 featureVector=[]
 tweets=[]
 
-""" Added by Rahul 1:03 pm """
-""" This Comment was added by Srinivasan """
-""" Added by Rahul 11/17/2013 2:15 pm """
-""" 2nd comment by Srinivasan"""
-""" Added by rahul 3:52pm """
-"""3rd Comment by Srini"""
-#1st comment Rahul
-#2nd comment Rahul
-"""4th Comment by Srini"""
+
 
 
 #start process_tweet
