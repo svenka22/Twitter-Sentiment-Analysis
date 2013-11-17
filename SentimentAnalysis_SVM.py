@@ -13,8 +13,7 @@ featureList=[]
 featureVector=[]
 tweets=[]
 
-
-
+"""Added comments with Mohan by Srinivasan"""
 
 #start process_tweet
 def processTweet(tweet):
