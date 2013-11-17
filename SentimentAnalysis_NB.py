@@ -126,8 +126,7 @@ def buildClassifier():
     global featureList
     global tweets
     
-    #stopWords = getStopWordList('data/stopwords.txt')
-    stopWords=nltk.corpus.stopwords.words('english')
+    stopWords = nltk.corpus.stopwords.words('english')
     
     #Read the tweets one by one and process it
     fp = open('data/smokingtweets.txt', 'r', )

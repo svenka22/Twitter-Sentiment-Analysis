@@ -1,5 +1,5 @@
 import re
-#import nltk
+import nltk
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
 from sklearn import svm
@@ -125,7 +125,7 @@ def buildClassifier():
     global featureList
     global tweets
     
-    stopWords = getStopWordList('data/stopwords.txt')
+    stopWords = nltk.corpus.stopwords.words('english')
     
     #Read the tweets one by one and process it
     fp = open('data/smokingtweets.txt', 'r', )
@@ -150,34 +150,45 @@ def buildClassifier():
    
     
     #Read the test tweet
-    tp = open('data/testdata.txt', 'r')
-    tLine = tp.readline()
-    
-    testTweets = []
-    
-    while tLine:
-        lines = tLine.rstrip().split('|@~')
-        tweet = lines[0]
-        sentiment = lines[1]
-        processedTweet = processTweet(tweet)
-        featureVector = getFeatureVector(processedTweet)
-        testTweets.append((featureVector, sentiment))
-        tLine = tp.readline()
-    # end loop
-    
+#     tp = open('data/testdata.txt', 'r')
+#     tLine = tp.readline()
+#     
+#     testTweets = []
+#     
+#     while tLine:
+#         lines = tLine.rstrip().split('|@~')
+#         tweet = lines[0]
+#         sentiment = lines[1]
+#         processedTweet = processTweet(tweet)
+#         featureVector = getFeatureVector(processedTweet)
+#         testTweets.append((featureVector, sentiment))
+#         tLine = tp.readline()
+#     # end loop
+#     
    
     # Train the SVM Classifier
     feature_vectors_train,training_labels = getSVMFeatureVectorWithLabels(tweets, featureList)
-    print "SVM Classifier trained"
-    feature_vectors_test,actual_label = getSVMFeatureVectorWithLabels(testTweets, featureList)
+    
+    #feature_vectors_test,actual_label = getSVMFeatureVectorWithLabels(testTweets, featureList)
     
     # Run SVM Classifier
     SVMClassifier = svm.SVC(kernel='linear')
     pred_label_list = []
     
-    pred_label = SVMClassifier.fit(feature_vectors_train, training_labels).predict(feature_vectors_test)
-    pred_label_list.extend(pred_label)
-    #print "pred_label:",pred_label
+    num_folds = 10
+    Accuracy = 0
+    subset_size = len(feature_vectors_train)/num_folds
+    for i in range(num_folds):
+        testing_this_round = feature_vectors_train[i*subset_size:][:subset_size]
+        training_this_round = feature_vectors_train[:i*subset_size] + feature_vectors_train[(i+1)*subset_size:]
+        
+        pred_label = SVMClassifier.fit(training_this_round, training_labels).predict(testing_this_round)
+        pred_label_list.extend(pred_label)
+    
+        #acc = accuracy_score(actual_label, pred_label_list)
+        Accuracy = Accuracy+nltk.classify.accuracy(classifier, testing_this_round)
+        
+    print "Mean Accuracy for DT",float(float(Accuracy)/float(num_folds))
     
     print "PRED:",pred_label_list
     print "ACTU:",actual_label
