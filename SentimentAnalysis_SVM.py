@@ -13,18 +13,6 @@ featureList=[]
 featureVector=[]
 tweets=[]
 
-# Srinivasan is always a thala
-
-"""Added comments with Mohan by Srinivasan"""
-
-#Comment-1
-#Comment-2
-#Comment-3
-
-#comment 1
-
-
-
 #start process_tweet
 def processTweet(tweet):
     # process the tweets
