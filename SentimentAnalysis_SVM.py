@@ -18,11 +18,8 @@ tweets=[]
 """ Added by Rahul 11/17/2013 2:15 pm """
 """ 2nd comment by Srinivasan"""
 """ Added by rahul 3:52pm """
-<<<<<<< HEAD
 """3rd Comment by Srini"""
-=======
-""" New Comment Rahul 3 :59pm """
->>>>>>> branch 'master' of https://github.com/svenka22/Twitter-Sentiment-Analysis.git
+
 
 #start process_tweet
 def processTweet(tweet):
