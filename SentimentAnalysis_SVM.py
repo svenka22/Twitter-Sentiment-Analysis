@@ -191,7 +191,7 @@ def buildClassifier():
         #acc = accuracy_score(actual_label, pred_label_list)
         Accuracy = Accuracy+nltk.classify.accuracy(classifier, testing_this_round)
         
-    print "Mean Accuracy for DT",float(float(Accuracy)/float(num_folds))
+#     print "Mean Accuracy for DT",float(float(Accuracy)/float(num_folds))
     
     print "PRED:",pred_label_list
     print "ACTU:",actual_label
