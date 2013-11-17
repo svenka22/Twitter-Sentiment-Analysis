@@ -17,9 +17,8 @@ tweets=[]
 
 """Added comments with Mohan by Srinivasan"""
 
-#Comment-1
-#Comment-2
-#Comment-3
+#comment 1
+#commment2
 
 
 #start process_tweet
