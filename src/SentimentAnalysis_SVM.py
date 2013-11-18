@@ -1,10 +1,11 @@
 import re
 import nltk
-import itertools
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
-from nltk.collocations import BigramCollocationFinder
-from nltk.metrics import BigramAssocMeasures
+from sklearn import svm
+from nltk.corpus import stopwords
+from nltk.stem import PorterStemmer
+
 
 # Global Variables #
 stopWords=[]
@@ -37,6 +38,8 @@ def replaceTwoOrMore(s):
     return pattern.sub(r"\1\1", s)
 #end
  
+
+
 #start getStopWordList
 def getStopWordList(stopWordListFileName):
     #read the stopwords file and build a list
@@ -58,12 +61,15 @@ def getStopWordList(stopWordListFileName):
 def getFeatureVector(tweet):
     #global featureVector
     featureVector = []
+    stemmer=PorterStemmer()
     #split tweet into words
     words = tweet.split()
     for w in words:        #replace two or more with two occurrences
         w = replaceTwoOrMore(w)
         #strip punctuation
         w = w.strip('\'"?,.')
+        #Using Porter Stemmer
+        #w = stemmer.stem(w)
         #check if the word stats with an alphabet
         val = re.search(r"^[a-zA-Z][a-zA-Z0-9]*$", w)
         #ignore if it is a stop word
@@ -103,22 +109,15 @@ def getSVMFeatureVectorWithLabels(tweets, featureList):
 
 def union(a, b):
     return list(set(a) | set(b))
-
+ 
 #start extract_features
-def extract_features(tweet, score_fn=BigramAssocMeasures.chi_sq, n=200):
-    bigram_finder = BigramCollocationFinder.from_words(tweet)
-    bigrams = bigram_finder.nbest(score_fn, n)
-    return dict([(ngram, True) for ngram in itertools.chain(tweet, bigrams)])
+def extract_features(tweet):
+    tweet_words = set(tweet)
+    features = {}
+    for word in featureList:
+        features['contains(%s)' % word] = (word in tweet_words)
+    return features
 #end
-
-# #start extract_features
-# def extract_features(tweet):
-#     tweet_words = set(tweet)
-#     features = {}
-#     for word in featureList:
-#         features['contains(%s)' % word] = (word in tweet_words)
-#     return features
-# #end
 
 #Main function
 def buildClassifier():
@@ -135,49 +134,70 @@ def buildClassifier():
     while line:
         linesplit = line.split('|@~')
         tweet = linesplit[0]
+        #print "tweet: ", tweet
         sentiment = linesplit[1].rstrip()
+        #print "sentiment: ", sentiment
         processedTweet = processTweet(tweet)
+        #print "processedTweet:",processedTweet
         featureVector = getFeatureVector(processedTweet)
+        #print "featureVector:",featureVector
         tweets.append((featureVector, sentiment));
-        #featureList = union(featureList, featureVector)
+        featureList = union(featureList, featureVector)
+        #print ""
         line = fp.readline()
     fp.close()
+    #print "featureList:",featureList
+   
     
-    training_set = nltk.classify.util.apply_features(extract_features, tweets)
-    # Train the classifier
-    #NBClassifier = nltk.NaiveBayesClassifier.train(training_set)
-    
-    #Reading the test data
+    #Read the test tweet
 #     tp = open('data/testdata.txt', 'r')
 #     tLine = tp.readline()
 #     
-#     actual_class = []
-#     pred_class = []
+#     testTweets = []
+#     
 #     while tLine:
 #         lines = tLine.rstrip().split('|@~')
 #         tweet = lines[0]
 #         sentiment = lines[1]
-#         #Predict the class using NB Classifier and append it to the pred_class list
-#         pred_class.append(NBClassifier.classify(extract_features(getFeatureVector(processTweet(tweet)))))
-#         actual_class.append(sentiment)
+#         processedTweet = processTweet(tweet)
+#         featureVector = getFeatureVector(processedTweet)
+#         testTweets.append((featureVector, sentiment))
 #         tLine = tp.readline()
 #     # end loop
+#     
+   
+    # Train the SVM Classifier
+    feature_vectors_train,training_labels = getSVMFeatureVectorWithLabels(tweets, featureList)
     
-    num_folds=10
-    Accuracy=0
-    subset_size = len(training_set)/num_folds
+    #feature_vectors_test,actual_label = getSVMFeatureVectorWithLabels(testTweets, featureList)
+    
+    # Run SVM Classifier
+    SVMClassifier = svm.SVC(kernel='linear')
+    pred_label_list = []
+    
+    num_folds = 10
+    Accuracy = 0
+    subset_size = len(feature_vectors_train)/num_folds
     for i in range(num_folds):
-        testing_this_round = training_set[i*subset_size:][:subset_size]
-        training_this_round = training_set[:i*subset_size] + training_set[(i+1)*subset_size:]
-        classifier = nltk.classify.NaiveBayesClassifier.train(training_this_round)
-        Accuracy=Accuracy+nltk.classify.accuracy(classifier, testing_this_round)
+        testing_this_round = feature_vectors_train[i*subset_size:][:subset_size]
+        training_this_round = feature_vectors_train[:i*subset_size] + feature_vectors_train[(i+1)*subset_size:]
+        
+        pred_label = SVMClassifier.fit(training_this_round, training_labels).predict(testing_this_round)
+        pred_label_list.extend(pred_label)
+    
+        #acc = accuracy_score(actual_label, pred_label_list)
+        Accuracy = Accuracy+nltk.classify.accuracy(classifier, testing_this_round)
         
     print "Mean Accuracy for DT",float(float(Accuracy)/float(num_folds))
     
-#     cm = confusion_matrix(actual_class, pred_class)
-#     print cm
-#     acc = accuracy_score(actual_class, pred_class)
-#     print "Accuracy using Naive Bayesian Classification:",acc
+#     print "PRED:",pred_label_list
+#     print "ACTU:",actual_label
+#     
+#     cm = confusion_matrix(actual_label, pred_label_list)
+#     print "COnfusion Matrix:\n",cm
+#     acc = accuracy_score(actual_label, pred_label_list)
+#     print "Accuracy:",acc
 
+    
 # Call the main method
 if __name__ == '__main__':  buildClassifier() 
