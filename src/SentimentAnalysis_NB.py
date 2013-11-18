@@ -12,9 +12,9 @@ stopWords=[]
 featureList=[]
 featureVector=[]
 tweets=[]
-dataPreprocessing = DataPreprocessing(); 
+dataPreprocessing = DataPreprocessing()
 
-class SVMClassifier:
+class NBClassifier:
 
     #Main function
     def NBbuildClassifier(self):
