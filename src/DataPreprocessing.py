@@ -5,6 +5,9 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
 from nltk.collocations import BigramCollocationFinder
 from nltk.metrics import BigramAssocMeasures
+from nltk.corpus import wordnet
+from nltk.stem.wordnet import WordNetLemmatizer
+
 
 class DataPreprocessing:
     
@@ -48,10 +51,29 @@ class DataPreprocessing:
             #check if the word stats with an alphabet
             val = re.search(r"^[a-zA-Z][a-zA-Z0-9]*$", w)
             #ignore if it is a stop word
+                
             if(w in self.stopWords or val is None):
                 continue
             else:
+                lmtzr = WordNetLemmatizer()
+                tokens=nltk.word_tokenize(w)
+                grammer_tuple = nltk.pos_tag(tokens)
+                #print w,"-->", grammer_tuple.pop()[1]
+                grammer =  grammer_tuple.pop()[1]
+                #print "Before:", w
+                if grammer.startswith('J'):
+                    w = lmtzr.lemmatize(w, wordnet.ADJ)
+                elif grammer.startswith('V'):
+                    w = lmtzr.lemmatize(w, wordnet.VERB)
+                elif grammer.startswith('N'):
+                    w = lmtzr.lemmatize(w, wordnet.NOUN)
+                elif grammer.startswith('R'):
+                    w = lmtzr.lemmatize(w, wordnet.ADV)
+                else:
+                    w = lmtzr.lemmatize(w, wordnet.NOUN)
+                #print "After:", w, "\n"
                 featureVector.append(w.lower())
+                
         return featureVector
     #end
        
