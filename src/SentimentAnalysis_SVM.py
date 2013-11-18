@@ -78,7 +78,6 @@ class SVMClassifier:
         SVMClassifier = svm.SVC(kernel='linear')
         pred_label = []
         
-        print "Classifying.."
         num_folds = 10
         Accuracy = 0
         subset_size = len(tweets)/num_folds
@@ -87,9 +86,9 @@ class SVMClassifier:
             training_this_round = tweets[:i*subset_size] + tweets[(i+1)*subset_size:]
             feature_vectors_train,training_labels = self.getSVMFeatureVectorWithLabels(training_this_round, featureList)
             feature_vectors_test,actual_label = self.getSVMFeatureVectorWithLabels(testing_this_round, featureList)
-            
+            print "Classifying.."
             pred_label = SVMClassifier.fit(feature_vectors_train, training_labels).predict(feature_vectors_test)
-            #pred_label_list.extend(pred_label)    
             Accuracy = Accuracy + accuracy_score(actual_label, pred_label)        
-        print "Accuracy: ",float(float(Accuracy)/float(num_folds))
+        
+        print "Accuracy:",float(float(Accuracy)/float(num_folds))
     
