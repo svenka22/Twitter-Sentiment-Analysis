@@ -1,12 +1,13 @@
 import itertools
 import re
-
 import nltk
 from nltk.collocations import BigramCollocationFinder
 from nltk.metrics import BigramAssocMeasures
 from sklearn.metrics import accuracy_score, confusion_matrix
 
+# package for data preprocessing
 from DataPreprocessing import DataPreprocessing
+
 # Global Variables #
 stopWords=[]
 featureList=[]
@@ -61,12 +62,15 @@ class NBClassifier:
         global featureList
         global tweets
         
+        # retrieve the stop words in english using the nltk package
         stopWords = nltk.corpus.stopwords.words('english')
         
         #Read the tweets one by one and process it
         fp = open('../data/smokingtweets.txt', 'r', )
         line = fp.readline()
         
+        # pre process the tweet and vectorize the tweet
+        # create a list of dict of the form [feature_vector, sentiment]
         while line:
             linesplit = line.split('|@~')
             tweet = linesplit[0]
@@ -74,9 +78,9 @@ class NBClassifier:
             processedTweet = dataPreprocessing.processTweet(tweet)
             featureVector = dataPreprocessing.getFeatureVector(processedTweet)
             tweets.append((featureVector, sentiment));
-            #featureList = union(featureList, featureVector)
             line = fp.readline()
         fp.close()
+        
         
         training_set = nltk.classify.util.apply_features(dataPreprocessing.extract_features, tweets)
         Accuracy = self.plainVaidation(training_set)
