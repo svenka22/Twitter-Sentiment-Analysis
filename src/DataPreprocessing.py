@@ -8,7 +8,6 @@ from nltk.metrics import BigramAssocMeasures
 from nltk.corpus import wordnet
 from nltk.stem.wordnet import WordNetLemmatizer
 
-
 class DataPreprocessing:
     
     stopWords=[]
@@ -38,8 +37,30 @@ class DataPreprocessing:
         return pattern.sub(r"\1\1", s)
     #end
     
+    def lematizer(self, w, featureVector):
+        
+        lmtzr = WordNetLemmatizer()
+        tokens=nltk.word_tokenize(w)
+        grammer_tuple = nltk.pos_tag(tokens)
+        #print w,"-->", grammer_tuple.pop()[1]
+        grammer =  grammer_tuple.pop()[1]
+        #print "Before:", w
+        if grammer.startswith('J'):
+            w = lmtzr.lemmatize(w, wordnet.ADJ)
+        elif grammer.startswith('V'):
+            w = lmtzr.lemmatize(w, wordnet.VERB)
+        elif grammer.startswith('N'):
+            w = lmtzr.lemmatize(w, wordnet.NOUN)
+        elif grammer.startswith('R'):
+            w = lmtzr.lemmatize(w, wordnet.ADV)
+        else:
+            w = lmtzr.lemmatize(w, wordnet.NOUN)
+        #print "After:", w, "\n"
+        featureVector.append(w.lower())
+        return featureVector
+       
     #start getfeatureVector
-    def getFeatureVector(self,tweet):
+    def getFeatureVector(self, tweet):
         #global featureVector
         featureVector = []
         #split tweet into words
@@ -51,29 +72,11 @@ class DataPreprocessing:
             #check if the word stats with an alphabet
             val = re.search(r"^[a-zA-Z][a-zA-Z0-9]*$", w)
             #ignore if it is a stop word
-                
             if(w in self.stopWords or val is None):
                 continue
             else:
-                lmtzr = WordNetLemmatizer()
-                tokens=nltk.word_tokenize(w)
-                grammer_tuple = nltk.pos_tag(tokens)
-                #print w,"-->", grammer_tuple.pop()[1]
-                grammer =  grammer_tuple.pop()[1]
-                #print "Before:", w
-                if grammer.startswith('J'):
-                    w = lmtzr.lemmatize(w, wordnet.ADJ)
-                elif grammer.startswith('V'):
-                    w = lmtzr.lemmatize(w, wordnet.VERB)
-                elif grammer.startswith('N'):
-                    w = lmtzr.lemmatize(w, wordnet.NOUN)
-                elif grammer.startswith('R'):
-                    w = lmtzr.lemmatize(w, wordnet.ADV)
-                else:
-                    w = lmtzr.lemmatize(w, wordnet.NOUN)
-                #print "After:", w, "\n"
+                #self.lematizer(w, featureVector)
                 featureVector.append(w.lower())
-                
         return featureVector
     #end
        
@@ -87,12 +90,13 @@ class DataPreprocessing:
         bigrams = bigram_finder.nbest(score_fn, n)
         return dict([(ngram, True) for ngram in itertools.chain(tweet, bigrams)])
     #end
-    
-    # #start extract_features
-    # def extract_features(tweet):
-    #     tweet_words = set(tweet)
-    #     features = {}
-    #     for word in featureList:
-    #         features['contains(%s)' % word] = (word in tweet_words)
-    #     return features
-    # #end
+     
+
+# #start extract_features
+# def extract_features(tweet):
+#     tweet_words = set(tweet)
+#     features = {}
+#     for word in featureList:
+#         features['contains(%s)' % word] = (word in tweet_words)
+#     return features
+#end
