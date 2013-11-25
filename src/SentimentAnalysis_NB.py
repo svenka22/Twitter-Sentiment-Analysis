@@ -1,15 +1,14 @@
-import itertools
-import re
-import nltk
-from nltk.collocations import BigramCollocationFinder
-from nltk.metrics import BigramAssocMeasures
-from sklearn.metrics import accuracy_score, confusion_matrix
 import time
+import nltk
+from sklearn.metrics import accuracy_score, confusion_matrix
+
+from DataPreprocessing import DataPreprocessing
+from Metrics import Metrics
+
+
 start_time=time.time()
 
 # package for data preprocessing
-from DataPreprocessing import DataPreprocessing
-from Metrics import Metrics
 
 # Global Variables #
 stopWords=[]

@@ -1,13 +1,13 @@
-import re
 import en
-import nltk
 import itertools
-from sklearn.metrics import confusion_matrix
-from sklearn.metrics import accuracy_score
+import re
+import nltk
 from nltk.collocations import BigramCollocationFinder
-from nltk.metrics import BigramAssocMeasures
 from nltk.corpus import wordnet
+from nltk.metrics import BigramAssocMeasures
 from nltk.stem.wordnet import WordNetLemmatizer
+
+
 
 class DataPreprocessing:
     

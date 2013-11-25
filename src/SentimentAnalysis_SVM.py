@@ -1,11 +1,11 @@
-import re
-import nltk
-from nltk.corpus import stopwords
-from nltk.stem import PorterStemmer
-from sklearn import svm
-from sklearn.metrics import accuracy_score, confusion_matrix
-from DataPreprocessing import DataPreprocessing
 import time
+# from nltk.corpus import stopwords
+# from nltk.stem import PorterStemmer
+from sklearn import svm
+from sklearn.metrics import accuracy_score
+from DataPreprocessing import DataPreprocessing
+
+
 start_time=time.time()
 
 # Global Variables #
