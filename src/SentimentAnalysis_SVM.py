@@ -5,7 +5,8 @@ from nltk.stem import PorterStemmer
 from sklearn import svm
 from sklearn.metrics import accuracy_score, confusion_matrix
 from DataPreprocessing import DataPreprocessing
-
+import time
+start_time=time.time()
 
 # Global Variables #
 stopWords=[]
@@ -15,11 +16,84 @@ tweets=[]
 dataPreprocessing = DataPreprocessing()
 
 class SVMClassifier:
+    
+    def crossValidation(self, SVMClassifier):
+        global featureList
+        global tweets
+        
+        num_folds=5
+        Accuracy=0
+        subset_size = len(tweets)/num_folds
+        for i in range(num_folds):
+            pred_label_list = []
+            testing_this_round = tweets[i*subset_size:][:subset_size]
+            training_this_round = tweets[:i*subset_size] + tweets[(i+1)*subset_size:]
+            
+            for training_tweet in training_this_round:
+                featureList = dataPreprocessing.union(featureList, training_tweet[0])
+                #bigrams = dataPreprocessing.get_bigrams(training_tweet[0])
+                #featureList = dataPreprocessing.union(featureList, bigrams)
+            #end-loop
+            
+            feature_vectors_train,training_labels = self.getSVMFeatureVectorWithLabels(training_this_round, featureList)
+            feature_vectors_test,actual_label_list = self.getSVMFeatureVectorWithLabels(testing_this_round, featureList)
+            pred_label = SVMClassifier.fit(feature_vectors_train, training_labels).predict(feature_vectors_test)
+            pred_label_list.extend(pred_label)
+            Accuracy = Accuracy+accuracy_score(actual_label_list, pred_label_list)
+            print Accuracy
+            
+        Accuracy=float(float(Accuracy)/float(num_folds))
+        return Accuracy
 
-    def getSVMFeatureVectorWithLabels(self,tweets, featureList):        
+        
+    def plainValidation(self, SVMClassifier):
+        
+        testTweets = []
+        pred_label_list = []
+        global featureList
+        global tweets
+        
+        #Building featureList
+        for tweet in tweets:
+                #bigrams = dataPreprocessing.get_bigrams(tweet[0])
+                #featureList = dataPreprocessing.union(featureList, bigrams)
+                featureList = dataPreprocessing.union(featureList, tweet[0])
+        
+        #print "featureList:",featureList
+        # Train the SVM Classifier
+        feature_vectors_train,training_labels = self.getSVMFeatureVectorWithLabels(tweets, featureList)
+        print "SVM Classifier trained"
+        
+        #Read the test tweet
+        tp = open('../data/testtweets.txt', 'r')
+        tLine = tp.readline()
+        while tLine:
+            lines = tLine.rstrip().split('|@~')
+            testTweet = lines[0]
+            sentiment = lines[1]
+            processedtestTweet = dataPreprocessing.processTweet(testTweet)
+            featureVector = dataPreprocessing.getFeatureVector(processedtestTweet)
+            #featureVector = featureVector + dataPreprocessing.get_bigrams(featureVector)
+            testTweets.append((featureVector, sentiment))
+            tLine = tp.readline()
+        # end loop
+        
+        # Extract features from Test data
+        feature_vectors_test,actual_label_list = self.getSVMFeatureVectorWithLabels(testTweets, featureList)
+        
+        pred_label = SVMClassifier.fit(feature_vectors_train, training_labels).predict(feature_vectors_test)
+        pred_label_list.extend(pred_label)
+        #cm = confusion_matrix(actual_label_list, pred_label_list)
+        #print cm
+        acc = accuracy_score(actual_label_list, pred_label_list)
+        return acc
+    
+    
+    def getSVMFeatureVectorWithLabels(self, tweets, featureList):        
         labels = []
         feature_vectors = []
-         
+        tweet_words = []
+        
         for t in tweets:
             
             tweet_words = t[0]
@@ -45,50 +119,29 @@ class SVMClassifier:
     #Main function
     def SVMbuildClassifier(self):
         global stopWords
-        global featureList
+        #global featureList
         global tweets
-        
-        stopWords = nltk.corpus.stopwords.words('english')
-        print "Stop words retrieved"
         
         #Read the tweets one by one and process it
         fp = open('../data/smokingtweets.txt', 'r', )
         line = fp.readline()
-        i = 1
         while line:
             linesplit = line.split('|@~')
             tweet = linesplit[0]
-            #print "tweet: ", tweet
             sentiment = linesplit[1].rstrip()
-            #print "sentiment: ", sentiment
             processedTweet = dataPreprocessing.processTweet(tweet)
-            #print "processedTweet:",processedTweet
             featureVector = dataPreprocessing.getFeatureVector(processedTweet)
-            #print "featureVector:",featureVector
+            #bigrams = dataPreprocessing.get_bigrams(featureVector)
+            #featureVector = dataPreprocessing.union(featureVector, bigrams)
             tweets.append((featureVector, sentiment));
-            featureList = dataPreprocessing.union(featureList, featureVector)
-            #print ""
             line = fp.readline()
-            i = i + 1
         fp.close()
         print "Data Preprocessing Completed..."
-        print "Features Extracted..."
         
         # Run SVM Classifier
         SVMClassifier = svm.SVC(kernel='linear')
-        pred_label = []
+        Accuracy=self.crossValidation(SVMClassifier)   
+        #Accuracy=self.plainValidation(SVMClassifier)  
         
-        num_folds = 10
-        Accuracy = 0
-        subset_size = len(tweets)/num_folds
-        for i in range(num_folds):
-            testing_this_round = tweets[i*subset_size:][:subset_size]
-            training_this_round = tweets[:i*subset_size] + tweets[(i+1)*subset_size:]
-            feature_vectors_train,training_labels = self.getSVMFeatureVectorWithLabels(training_this_round, featureList)
-            feature_vectors_test,actual_label = self.getSVMFeatureVectorWithLabels(testing_this_round, featureList)
-            print "Classifying.."
-            pred_label = SVMClassifier.fit(feature_vectors_train, training_labels).predict(feature_vectors_test)
-            Accuracy = Accuracy + accuracy_score(actual_label, pred_label)        
-        
-        print "Accuracy:",float(float(Accuracy)/float(num_folds))
-    
+        print "Accuracy using SVM:",Accuracy
+        print "Time:",str(time.time()-start_time)

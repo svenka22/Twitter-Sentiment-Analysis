@@ -4,6 +4,8 @@ import nltk
 from nltk.collocations import BigramCollocationFinder
 from nltk.metrics import BigramAssocMeasures
 from sklearn.metrics import accuracy_score, confusion_matrix
+import time
+start_time=time.time()
 
 # package for data preprocessing
 from DataPreprocessing import DataPreprocessing
@@ -13,62 +15,86 @@ stopWords=[]
 featureList=[]
 featureVector=[]
 tweets=[]
+
 dataPreprocessing = DataPreprocessing()
 
 class NBClassifier:
-
-    def crossValidation(self, training_set):
-        num_folds=10
+    
+    #start extract_features
+    def extract_features(self, tweet):
+        tweet_words = set(tweet)
+        features = {}
+        for word in featureList:
+            features['contains(%s)' % word] = (word in tweet_words)
+        return features
+    #end
+    
+    def crossValidation(self, tweets):
+        #tweets is a list e.g.: [(['electronic', 'cigarette', 'risk'], 'No Cessation'), (['word'],class) ]
+        global featureList
+        num_folds=2
         Accuracy=0
-        subset_size = len(training_set)/num_folds
+        subset_size = len(tweets)/num_folds
         for i in range(num_folds):
-            testing_this_round = training_set[i*subset_size:][:subset_size]
-            training_this_round = training_set[:i*subset_size] + training_set[(i+1)*subset_size:]
-            classifier = nltk.classify.NaiveBayesClassifier.train(training_this_round)
-            Accuracy=Accuracy+nltk.classify.accuracy(classifier, testing_this_round)
-        #Total Accuracy    
+            testing_this_round = tweets[i*subset_size:][:subset_size]
+            training_this_round = tweets[:i*subset_size] + tweets[(i+1)*subset_size:]
+            
+            for training_tweet in training_this_round:
+                featureList = dataPreprocessing.union(featureList, training_tweet[0])
+                #bigrams = dataPreprocessing.get_bigrams(training_tweet[0])
+                #featureList = dataPreprocessing.union(featureList, bigrams)
+            #end-loop
+            print featureList
+            training_set = nltk.classify.util.apply_features(self.extract_features, training_this_round)
+            classifier = nltk.classify.NaiveBayesClassifier.train(training_set)
+            
+            test_set = nltk.classify.util.apply_features(self.extract_features, testing_this_round)
+            Accuracy=Accuracy+nltk.classify.accuracy(classifier, test_set)
+            print Accuracy
         Accuracy=float(float(Accuracy)/float(num_folds))
         return Accuracy
 
-    # This method uses the training set to train the NBClassifer
-    # and constructs the classifier
-    # The test tweets are read and tested against the trained classifier
-    # The accuracy score, precision and recall is calculated
-    def plainVaidation(self, training_set):
+    def plainValidation(self, tweets):
+        print tweets
+        #tweets is a list e.g.: [(['electronic', 'cigarette', 'risk'], 'No Cessation'), (['word'],class) ]
+        global featureList
+        actual_class = []
+        pred_class = []
+        
+        #Building featureList
+        for tweet in tweets:
+                #bigrams = dataPreprocessing.get_bigrams(tweet)
+                #featureList = dataPreprocessing.union(featureList, bigrams)
+                featureList = dataPreprocessing.union(featureList, tweet[0])
         
         # Train the classifier
+        training_set = nltk.classify.util.apply_features(self.extract_features, tweets)
         NBClassifier = nltk.NaiveBayesClassifier.train(training_set)
-        
+        print "Classifier trained"
+                
+        print "Reading test data"
         #Reading the test data
         tp = open('../data/testtweets.txt', 'r')
         tLine = tp.readline()
         
-        actual_class = []
-        pred_class = []
         while tLine:
             lines = tLine.rstrip().split('|@~')
             tweet = lines[0]
             sentiment = lines[1]
-            #Predict the class using NB Classifier and append it to the pred_class list
-            pred_class.append(NBClassifier.classify(dataPreprocessing.extract_features(\
-                    dataPreprocessing.getFeatureVector(dataPreprocessing.processTweet(tweet)))))
+            processedTweet = dataPreprocessing.processTweet(tweet)
+            testFeatureVector = dataPreprocessing.getFeatureVector(processedTweet)
+            #bigrams = dataPreprocessing.get_bigrams(testFeatureVector)
+            #testFeatureVector = dataPreprocessing.union(bigrams, testFeatureVector)
+            pred_class.append(NBClassifier.classify(self.extract_features(testFeatureVector)))
+            print "pred_class:",pred_class
             actual_class.append(sentiment)
             tLine = tp.readline()
         # end loop
         
-        # Confusion Matrix Construction
         cm = confusion_matrix(actual_class, pred_class)
         print cm
-        accuracyScoreValue = accuracy_score(actual_class, pred_class)
-        precision = nltk.metrics.precision(set(actual_class),set(pred_class));
-        recall = nltk.metrics.recall(set(actual_class),set(pred_class));
-        f_score = nltk.metrics.f_measure(set(actual_class),set(pred_class), 0.5)
-        # returns the accuracy, 
-        # actualClass from the test data,
-        # predicted class for test tweets from the clasifer
-        return accuracyScoreValue,\
-            actual_class, pred_class,precision,recall,f_score
-                
+        acc = accuracy_score(actual_class, pred_class)
+        return acc
     
    
     #Main function
@@ -76,10 +102,7 @@ class NBClassifier:
         global stopWords
         global featureList
         global tweets
-        
-        # retrieve the stop words in english using the nltk package
-        stopWords = nltk.corpus.stopwords.words('english')
-        
+      
         #Read the tweets one by one and process it
         fp = open('../data/smokingtweets.txt', 'r', )
         line = fp.readline()
@@ -92,15 +115,14 @@ class NBClassifier:
             sentiment = linesplit[1].rstrip()
             processedTweet = dataPreprocessing.processTweet(tweet)
             featureVector = dataPreprocessing.getFeatureVector(processedTweet)
+            #bigrams = dataPreprocessing.get_bigrams(featureVector)
+            #featureVector = dataPreprocessing.union(featureVector, bigrams)
             tweets.append((featureVector, sentiment));
             line = fp.readline()
         fp.close()
+        print "Preprocessing done"
         
-        
-        training_set = nltk.classify.util.apply_features(dataPreprocessing.extract_features, tweets)
-        Accuracy,actualClass,predictClass,precision,recall,f_score = self.plainVaidation(training_set)
+        #Accuracy = self.plainValidation(tweets)
+        Accuracy = self.crossValidation(tweets)
         print "Accuracy using Naive Bayesian Classification:",Accuracy
-        print "Precision using Naive Bayesian Classification:",precision
-        print "Recall using Naive Bayesian Classification:",recall
-        print "F-Score using Naive Bayesian Classification:",f_score
-            
+        print "Time:",str(time.time()-start_time)

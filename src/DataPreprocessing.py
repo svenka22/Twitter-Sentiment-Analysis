@@ -10,8 +10,6 @@ from nltk.stem.wordnet import WordNetLemmatizer
 
 class DataPreprocessing:
     
-    stopWords=[]
-    
     #start process_tweet
     def processTweet(self,tweet):
         # process the tweets
@@ -55,24 +53,34 @@ class DataPreprocessing:
             w = lmtzr.lemmatize(w, wordnet.ADV)
         else:
             w = lmtzr.lemmatize(w, wordnet.NOUN)
-        #print "After:", w, "\n"
         featureVector.append(w.lower())
         return featureVector
        
     #start getfeatureVector
     def getFeatureVector(self, tweet):
+        
+        stopWords=[]
+        #retrieve the stop words in english using the nltk package
+        stopWords = nltk.corpus.stopwords.words('english')
+        stopWords.append("URL")
+        stopWords.append("AT_USER")
+        
         #global featureVector
         featureVector = []
+        emoticons = [':-)',':)','(-:','(:',';)',';-)',')-:','):',':-(',':(',':-P','=P',':P',':-D',':\'(',':-/',':S','=D','<3',':D', ':|',':-|']
         #split tweet into words
+        #print tweet
         words = tweet.split()
         for w in words:        #replace two or more with two occurrences
+            if w in emoticons:
+                featureVector.append(w)
             w = self.replaceTwoOrMore(w)
             #strip punctuation
             w = w.strip('\'"?,.')
             #check if the word stats with an alphabet
             val = re.search(r"^[a-zA-Z][a-zA-Z0-9]*$", w)
             #ignore if it is a stop word
-            if(w in self.stopWords or val is None):
+            if(w in stopWords or val is None):
                 continue
             else:
                 #self.lematizer(w, featureVector)
@@ -83,20 +91,13 @@ class DataPreprocessing:
     def union(self,a, b):
         return list(set(a) | set(b))
     
-    
     #start extract_features
-    def extract_features(self,tweet, score_fn=BigramAssocMeasures.chi_sq, n=200):
-        bigram_finder = BigramCollocationFinder.from_words(tweet)
-        bigrams = bigram_finder.nbest(score_fn, n)
-        return dict([(ngram, True) for ngram in itertools.chain(tweet, bigrams)])
-    #end
-     
-
-# #start extract_features
-# def extract_features(tweet):
-#     tweet_words = set(tweet)
-#     features = {}
-#     for word in featureList:
-#         features['contains(%s)' % word] = (word in tweet_words)
-#     return features
-#end
+    def get_bigrams(self, tweet, score_fn=BigramAssocMeasures.chi_sq, n=200):
+            bigramslist = []
+            bigram_finder = BigramCollocationFinder.from_words(tweet)
+            bigrams = bigram_finder.nbest(score_fn, n)
+            for bigram in bigrams:
+                bigramslist.append(' '.join(str(i) for i in bigram))
+            return bigramslist #This is list e.g. ['you dude', 'Hi How', 'How are', 'are you']
+    #end 
+    
