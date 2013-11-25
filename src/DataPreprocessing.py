@@ -1,4 +1,5 @@
 import re
+import en
 import nltk
 import itertools
 from sklearn.metrics import confusion_matrix
@@ -100,4 +101,19 @@ class DataPreprocessing:
                 bigramslist.append(' '.join(str(i) for i in bigram))
             return bigramslist #This is list e.g. ['you dude', 'Hi How', 'How are', 'are you']
     #end 
+    
+    #removes duplicates
+    #input: list
+    #output: list
+    def removeDup(self,l):
+        return list(set(l))
+    
+    #Get the synonyms for the given string input
+    def getSynonyms(self,word,featureList):
+        list_of_list_synonyms = en.noun.senses(word)        #not an error
+        if len(list_of_list_synonyms) != 0:
+            merged = list(itertools.chain(*list_of_list_synonyms))
+            featureList = self.removeDup(merged) + featureList
+        return featureList
+            
     
