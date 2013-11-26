@@ -69,7 +69,7 @@ class NBClassifier:
                 for word in tweet[0]:
                     featureList = dataPreprocessing.getSynonyms(word, featureList)
                 # remove duplicate words
-                featureList = dataPreprocessing.removeDup(featureList)
+                # featureList = dataPreprocessing.removeDup(featureList)
                 # add the tweet words
                 featureList = dataPreprocessing.union(featureList, tweet[0])
                 

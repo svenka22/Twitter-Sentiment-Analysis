@@ -56,6 +56,7 @@ class DataPreprocessing:
             w = lmtzr.lemmatize(w, wordnet.NOUN)
         featureVector.append(w.lower())
         return featureVector
+    
        
     #start getfeatureVector
     def getFeatureVector(self, tweet):
@@ -70,22 +71,29 @@ class DataPreprocessing:
         featureVector = []
         emoticons = [':-)',':)','(-:','(:',';)',';-)',')-:','):',':-(',':(',':-P','=P',':P',':-D',':\'(',':-/',':S','=D','<3',':D', ':|',':-|']
         #split tweet into words
-        #print tweet
         words = tweet.split()
         for w in words:        #replace two or more with two occurrences
             if w in emoticons:
                 featureVector.append(w)
             w = self.replaceTwoOrMore(w)
+            
             #strip punctuation
             w = w.strip('\'"?,.')
+            
             #check if the word stats with an alphabet
             val = re.search(r"^[a-zA-Z][a-zA-Z0-9]*$", w)
+            
+            
+            
             #ignore if it is a stop word
             if(w in stopWords or val is None):
                 continue
             else:
                 #self.lematizer(w, featureVector)
                 featureVector.append(w.lower())
+        
+        #for each feature vector, check if its possible to split combined words
+        
         return featureVector
     #end
        
@@ -110,10 +118,33 @@ class DataPreprocessing:
     
     #Get the synonyms for the given string input
     def getSynonyms(self,word,featureList):
-        list_of_list_synonyms = en.noun.senses(word)        #not an error
-        if len(list_of_list_synonyms) != 0:
-            merged = list(itertools.chain(*list_of_list_synonyms))
-            featureList = self.removeDup(merged) + featureList
+        list_of_synonyms = self.getSynonymBasedOnPartOfSpeech(word)
+        if len(list_of_synonyms) != 0:
+#             merged = list(itertools.chain(*list_of_synonyms))
+            featureList = self.removeDup(list_of_synonyms) + featureList
         return featureList
+    
+    #get the part of speech for the word
+    def getSynonymBasedOnPartOfSpeech(self,word):
+        list_of_senses = list()
+        if en.is_noun(word):
+            list_of_senses = en.noun.senses(word)
+            if len(list_of_senses) != 0:
+                return list_of_senses[0]
+        elif en.is_verb(word):
+            list_of_senses = en.verb.senses(word)
+            if len(list_of_senses) != 0:
+                return list_of_senses[0]
+        elif en.is_adjective(word):
+            list_of_senses = en.adjective.senses(word)
+            if len(list_of_senses) != 0:
+                return list_of_senses[0]
+        elif en.is_adverb(word):
+            list_of_senses = en.adverb.senses(word)
+            if len(list_of_senses) != 0:
+                return list_of_senses[0]
+        else:
+            return list_of_senses 
+    
             
     
